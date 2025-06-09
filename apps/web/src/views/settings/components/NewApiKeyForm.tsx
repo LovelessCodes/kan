@@ -26,12 +26,12 @@ export default function NewApiKeyForm() {
 
   const createApiKeyMutation = useMutation({
     mutationFn: ({ name }: { name: string }) =>
-      authClient.apiKey.create({ name }),
+      authClient.apiKey.create({ name, prefix: "kan_" }),
     onSuccess: ({ data: apiKey }) => {
       qc.invalidateQueries({
         queryKey: ["apiKeys"],
       });
-      openModal("API_KEY_CREATED", apiKey?.key, apiKey?.name ?? undefined);
+      openModal("API_KEY_CREATED", apiKey?.key, apiKey?.name ?? "");
     },
     onError: () => {
       form.setError("name", {
