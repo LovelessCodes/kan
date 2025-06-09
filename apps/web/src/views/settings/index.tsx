@@ -2,11 +2,14 @@ import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { env } from "next-runtime-env";
 import {
   HiMiniArrowTopRightOnSquare,
+  HiMiniPlus,
   HiOutlineBanknotes,
   HiOutlineCodeBracketSquare,
   HiOutlineRectangleGroup,
   HiOutlineUser,
 } from "react-icons/hi2";
+
+import { authClient } from "@kan/auth/client";
 
 import Button from "~/components/Button";
 import Modal from "~/components/modal";
@@ -15,10 +18,14 @@ import { PageHead } from "~/components/PageHead";
 import { useModal } from "~/providers/modal";
 import { useWorkspace } from "~/providers/workspace";
 import { api } from "~/utils/api";
+import ApiKeyList from "./components/ApiKeyList";
 import Avatar from "./components/Avatar";
-import CreateAPIKeyForm from "./components/CreateAPIKeyForm";
+import CreatedApiKeyDisplay from "./components/CreatedApiKeyDisplay";
 import { CustomURLConfirmation } from "./components/CustomURLConfirmation";
+import { DeleteAccountConfirmation } from "./components/DeleteAccountConfirmation";
 import { DeleteWorkspaceConfirmation } from "./components/DeleteWorkspaceConfirmation";
+import NewApiKeyForm from "./components/NewApiKeyForm";
+import { RevokeApiKeyConfirmation } from "./components/RevokeApiKeyConfirmation";
 import UpdateDisplayNameForm from "./components/UpdateDisplayNameForm";
 import UpdateWorkspaceDescriptionForm from "./components/UpdateWorkspaceDescriptionForm";
 import UpdateWorkspaceNameForm from "./components/UpdateWorkspaceNameForm";
@@ -29,7 +36,7 @@ export default function SettingsPage() {
   const { workspace } = useWorkspace();
   const utils = api.useUtils();
 
-  const { data } = api.user.getUser.useQuery();
+  const { data: session } = authClient.useSession();
 
   const refetchUser = () => utils.user.getUser.refetch();
 
@@ -66,12 +73,30 @@ export default function SettingsPage() {
             <h2 className="mb-4 mt-8 text-[14px] text-neutral-900 dark:text-dark-1000">
               Profile picture
             </h2>
-            <Avatar userId={data?.id} userImage={data?.image} />
+            <Avatar
+              userId={session?.user?.id}
+              userImage={session?.user?.image}
+            />
 
             <h2 className="mb-4 mt-8 text-[14px] text-neutral-900 dark:text-dark-1000">
               Display name
             </h2>
-            <UpdateDisplayNameForm displayName={data?.name ?? ""} />
+            <UpdateDisplayNameForm displayName={session?.user?.name ?? ""} />
+            <div className="border-t border-light-300 dark:border-dark-300">
+              <h2 className="mt-8 text-[14px] text-neutral-900 dark:text-dark-1000">
+                Delete account
+              </h2>
+              <p className="mb-8 text-sm text-neutral-500 dark:text-dark-900">
+                Once you delete your account, there is no going back. This
+                action cannot be undone.
+              </p>
+              <Button
+                variant="primary"
+                onClick={() => openModal("DELETE_ACCOUNT")}
+              >
+                Delete account
+              </Button>
+            </div>
           </div>
         </>
       ),
@@ -114,9 +139,9 @@ export default function SettingsPage() {
               <h2 className="mt-8 text-[14px] text-neutral-900 dark:text-dark-1000">
                 Delete workspace
               </h2>
-              <p className="mb-8 mt-2 text-sm text-neutral-500 dark:text-dark-900">
-                Once you delete your workspace, there is no going back. Please
-                be certain.
+              <p className="mb-8 text-sm text-neutral-500 dark:text-dark-900">
+                Once you delete your workspace, there is no going back. This
+                action cannot be undone.
               </p>
               <Button
                 variant="primary"
@@ -166,13 +191,22 @@ export default function SettingsPage() {
           <PageHead title="Settings | API" />
 
           <div className="mb-8 border-t border-light-300 dark:border-dark-300">
-            <h2 className="mb-4 mt-8 text-[14px] text-neutral-900 dark:text-dark-1000">
-              API keys
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="mb-4 mt-8 text-[14px] text-neutral-900 dark:text-dark-1000">
+                API keys
+              </h2>
+              <Button
+                variant="secondary"
+                iconLeft={<HiMiniPlus />}
+                onClick={() => openModal("NEW_API_KEY")}
+              >
+                New API key
+              </Button>
+            </div>
             <p className="mb-8 text-sm text-neutral-500 dark:text-dark-900">
               View and manage your API keys.
             </p>
-            <CreateAPIKeyForm apiKey={data?.apiKey} refetchUser={refetchUser} />
+            <ApiKeyList />
           </div>
         </>
       ),
@@ -225,6 +259,14 @@ export default function SettingsPage() {
             {modalContentType === "UPDATE_WORKSPACE_URL" && (
               <CustomURLConfirmation workspacePublicId={workspace.publicId} />
             )}
+            {modalContentType === "DELETE_ACCOUNT" && (
+              <DeleteAccountConfirmation />
+            )}
+            {modalContentType === "NEW_API_KEY" && <NewApiKeyForm />}
+            {modalContentType === "REVOKE_API_KEY" && (
+              <RevokeApiKeyConfirmation />
+            )}
+            {modalContentType === "API_KEY_CREATED" && <CreatedApiKeyDisplay />}
           </Modal>
         </div>
       </div>
